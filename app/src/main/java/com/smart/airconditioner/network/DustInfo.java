@@ -64,7 +64,6 @@ public class DustInfo {
 
         @Override
         protected void onPostExecute(String result) {
-            // TODO: Implement this method
             super.onPostExecute(result);
             Log.d("DUST", "EXECUTE");
             ((MainActivity)context).notifyDustChange(result);

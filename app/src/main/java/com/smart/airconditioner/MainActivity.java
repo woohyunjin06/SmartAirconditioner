@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.smart.airconditioner.model.Weather;
 import com.smart.airconditioner.network.BluetoothClient;
 import com.smart.airconditioner.network.DustInfo;
 import com.smart.airconditioner.network.WeatherInfo;
@@ -61,15 +62,10 @@ public class MainActivity extends AppCompatActivity {
         wInfo = new WeatherInfo(this);
         wInfo.getCurrentWeather();
     }
-    public void notifyWeatherChange(JSONObject obj){ // WeatherTask 작업 끝을 알림
-        try {
-            JSONArray weatherArr = obj.getJSONArray("weather");
-            String weather = weatherArr.getJSONObject(0).getString("id");
-            Toast.makeText(this, weather, Toast.LENGTH_SHORT).show();
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+    public void notifyWeatherChange(Weather weather){ // WeatherTask 작업 끝을 알림
+        int weatherId = weather.getWeaatherId();
+        int resID = getResources().getIdentifier("weather_"+weatherId, "id", "com.smart.airconditioner");
+        Toast.makeText(this, ""+weather.getWeaatherId()+" "+ weather.getTemperature() + " "+weather.getHumid(), Toast.LENGTH_SHORT).show();
     }
     public void initClient() {
         client = BluetoothClient.getInstance();
