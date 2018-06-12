@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">스마트 공기청정기</string>
 
-    <string name="api_id">A</string>
+    <string name="dust_id">LgrUg9w0Kjz3Hp3c2InxlATULfE0bnkL7zjEP5dS9IcwJF18Cp2xph6hzsSSgzJzS19a0CI11KKyrrgrAj%2FtvQ%3D%3D</string>
+    <string name="weather_id">af40d953f86a2313ecd3a174b34d2f9f</string>
 </resources>

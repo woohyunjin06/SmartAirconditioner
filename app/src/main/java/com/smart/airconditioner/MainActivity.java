@@ -12,6 +12,11 @@ import android.widget.Toast;
 
 import com.smart.airconditioner.network.BluetoothClient;
 import com.smart.airconditioner.network.DustInfo;
+import com.smart.airconditioner.network.WeatherInfo;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -21,12 +26,13 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity {
 
     BluetoothClient client;
-    DustInfo info;
+    DustInfo dInfo;
+    WeatherInfo wInfo;
 
-    TextView mTemp;
+    TextView mWeather;
     TextView mDust;
 
-    String temp; // 온도 저장
+    String weather; // 날씨 저장
     String dust; // 미세먼지 저장
 
     @Override
@@ -37,23 +43,32 @@ public class MainActivity extends AppCompatActivity {
         init();
     }
     public void init() {
-        mTemp = findViewById(R.id.temp);
+        mWeather = findViewById(R.id.weather);
         mDust =  findViewById(R.id.dust);
 
         initDustInfo();
-        initClient();
+        initWeatherInfo();
+        //initClient();
     }
     public void initDustInfo() {
-        info = new DustInfo(this);
-        refreshDustInfo();
+        dInfo = new DustInfo(this);
+        dInfo.getCurrentDust();
     }
-    public void refreshDustInfo() {
-        dust = info.getCurrentDust();
-        if(dust != null){ // 정보를 받아왔을경우
-            mDust.setText(dust);
-        }
-        else{
-            Toast.makeText(this, "미세먼지 정보를 가져올 수 없습니다.", Toast.LENGTH_SHORT).show();
+    public void notifyDustChange(String data){
+        mDust.setText(data + "㎍/㎥");
+    }
+    public void initWeatherInfo() {
+        wInfo = new WeatherInfo(this);
+        wInfo.getCurrentWeather();
+    }
+    public void notifyWeatherChange(JSONObject obj){ // WeatherTask 작업 끝을 알림
+        try {
+            JSONArray weatherArr = obj.getJSONArray("weather");
+            String weather = weatherArr.getJSONObject(0).getString("id");
+            Toast.makeText(this, weather, Toast.LENGTH_SHORT).show();
+
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
     public void initClient() {
