@@ -6,7 +6,7 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,10 +14,6 @@ import com.smart.airconditioner.model.Weather;
 import com.smart.airconditioner.network.BluetoothClient;
 import com.smart.airconditioner.network.DustInfo;
 import com.smart.airconditioner.network.WeatherInfo;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -32,9 +28,9 @@ public class MainActivity extends AppCompatActivity {
 
     TextView mWeather;
     TextView mDust;
+    TextView mTemp;
+    ProgressDialog pd;
 
-    String weather; // 날씨 저장
-    String dust; // 미세먼지 저장
 
     @Override
     public void onCreate(Bundle onSaveStateInstance) {
@@ -46,11 +42,18 @@ public class MainActivity extends AppCompatActivity {
     public void init() {
         mWeather = findViewById(R.id.weather);
         mDust =  findViewById(R.id.dust);
+        mTemp = findViewById(R.id.temperature);
 
         initDustInfo();
         initWeatherInfo();
-        //initClient();
+        initClient();
     }
+
+    /**
+     * refresh :
+     * dInfo.getCurrentDust();
+     * wInfo.getCurrentWeather();
+     */
     public void initDustInfo() {
         dInfo = new DustInfo(this);
         dInfo.getCurrentDust();
@@ -64,8 +67,9 @@ public class MainActivity extends AppCompatActivity {
     }
     public void notifyWeatherChange(Weather weather){ // WeatherTask 작업 끝을 알림
         int weatherId = weather.getWeaatherId();
-        int resID = getResources().getIdentifier("weather_"+weatherId, "id", "com.smart.airconditioner");
-        Toast.makeText(this, ""+weather.getWeaatherId()+" "+ weather.getTemperature() + " "+weather.getHumid(), Toast.LENGTH_SHORT).show();
+        int resID = getResources().getIdentifier("@string/weather_"+weatherId, "string", "com.smart.airconditioner");
+        String weatherString = getString(resID);
+        mWeather.setText(weatherString);
     }
     public void initClient() {
         client = BluetoothClient.getInstance();
@@ -81,7 +85,21 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+    public void showProgress(String msg) {
+        if( pd == null ) {
+            pd = new ProgressDialog(this);
+            pd.setCancelable(false);
+        }
 
+        pd.setMessage(msg);
+        pd.show();
+    }
+
+    public void hideProgress(){
+        if( pd != null && pd.isShowing() ) {
+            pd.dismiss();
+        }
+    }
     public void enableBluetooth() {
         client.enableBluetooth(this, new BluetoothClient.OnBluetoothEnabledListener() {
             @Override
@@ -98,36 +116,79 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void getPairedDevice() {
+
         final List<String> deviceListString = new ArrayList<>();
+        final ArrayList<BluetoothDevice> deviceList = new ArrayList<BluetoothDevice>(); // 이미 페어링된 디바이스 리스트를 가져온다.
+        Set<BluetoothDevice> pairedDevices = client.getPairedDevices();
+        deviceList.addAll(pairedDevices);
 
-        final Set<BluetoothDevice> pairedDevices = client.getPairedDevices(); //페어링 된 디바이스만 가져옴
-        final ArrayList<BluetoothDevice> deviceList = new ArrayList<>(pairedDevices);
+        deviceList.addAll(pairedDevices); // 근처 디바이스를 스캔한다.
+        client.scanDevices(this, new BluetoothClient.OnScanListener() {
+            @Override public void onStart() {//스캔 시작.
 
-        final int count = deviceList.size();
-        for(BluetoothDevice bd : deviceList) {
-            deviceListString.add(bd.getName());
-        }
-        deviceListString.add("찾기");
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("연결할 블루투스 기기를 선택해주세요.");
-        builder.setItems(deviceListString.toArray(new CharSequence[deviceListString.size()]), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-                if(which == count){ //찾기
-                    findDevice();
-                    dialog.dismiss();
-                }
-
-                else {
-                    connectDevice(deviceList.get(which));
-                }
+            } @Override public void onFoundDevice(BluetoothDevice bluetoothDevice) { // 스캔이 완료된 디바이스를 받아온다.
+                if(deviceList.contains(bluetoothDevice)) {
+                    deviceList.remove(bluetoothDevice);
+                } deviceList.add(bluetoothDevice);
             }
-        }).show();
-        // 근처 디바이스를 스캔한다.
+            @Override public void onFinish() { // 스캔 종료.
+                for(BluetoothDevice bd : deviceList) {
+                    deviceListString.add(bd.getName());
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("연결할 블루투스 기기를 선택해주세요.");
+                builder.setItems(deviceListString.toArray(new CharSequence[deviceListString.size()]), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        connectDevice(deviceList.get(which));
+                    }
+                }).show();
+
+            }
+        });
     }
 
+
+    public void connectDevice(BluetoothDevice device){
+        if(!client.connect(this, device, handler)) { // 블루투스가 사용 가능한 상태가 아니려면 false 리턴.
+            Toast.makeText(this, "블루투스를 사용할 수 없습니다", Toast.LENGTH_SHORT).show();
+        }
+    }
+    public void findDevice(){
+        final List<String> deviceListString = new ArrayList<>();
+        client.scanDevices(MainActivity.this, new BluetoothClient.OnScanListener() {
+            final ArrayList<BluetoothDevice> deviceList_2 = new ArrayList<>();
+
+            @Override
+            public void onStart() { // 스캔 시작.
+                showProgress("블루투스 기기를 찾는 중입니다");
+            }
+            @Override public void onFoundDevice(BluetoothDevice bluetoothDevice) { // 스캔이 완료된 디바이스를 받아온다.
+                Log.d("bt event", "FOUND");
+                deviceList_2.add(bluetoothDevice);
+            }
+            @Override public void onFinish() { // 스캔 종료.
+                for(BluetoothDevice bd : deviceList_2) {
+                    deviceListString.add(bd.getName());
+                }
+                hideProgress();
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("연결할 블루투스 기기를 선택해주세요.");
+                builder.setItems(deviceListString.toArray(new CharSequence[deviceListString.size()]), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        connectDevice(deviceList_2.get(which));
+                    }
+                }).show();
+            }
+        });
+    }
+    @Override
+    protected void onDestroy() {
+        if(client!=null)
+            client.clear();
+        super.onDestroy();
+    }
     BluetoothClient.BluetoothStreamingHandler handler = new BluetoothClient.BluetoothStreamingHandler() {
         @Override
         public void onError(Exception e) {
@@ -144,6 +205,7 @@ public class MainActivity extends AppCompatActivity {
             // 연결 종료 이벤트.
         }
         ByteBuffer mmByteBuffer = ByteBuffer.allocate(1024);
+
         @Override
         public void onData(byte[] buffer, int length) {
             if(length == 0) return;
@@ -159,43 +221,4 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
-    public void connectDevice(BluetoothDevice device){
-        if(!client.connect(this, device, handler)) { // 블루투스가 사용 가능한 상태가 아니려면 false 리턴.
-            Toast.makeText(this, "블루투스를 사용할 수 없습니다", Toast.LENGTH_SHORT).show();
-        }
-    }
-    public void findDevice(){
-        final List<String> deviceListString = new ArrayList<>();
-        client.scanDevices(MainActivity.this, new BluetoothClient.OnScanListener() {
-            ProgressDialog progressDialog;
-            final ArrayList<BluetoothDevice> deviceList_2 = new ArrayList<>();
-
-            @Override
-            public void onStart() { // 스캔 시작.
-                Toast.makeText(MainActivity.this, "CALL", Toast.LENGTH_SHORT).show();
-
-                progressDialog.show();
-            }
-            @Override public void onFoundDevice(BluetoothDevice bluetoothDevice) { // 스캔이 완료된 디바이스를 받아온다.
-                deviceList_2.add(bluetoothDevice);
-            }
-            @Override public void onFinish() { // 스캔 종료.
-                progressDialog.dismiss();
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle("연결할 블루투스 기기를 선택해주세요.");
-                builder.setItems(deviceListString.toArray(new CharSequence[deviceListString.size()]), new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        connectDevice(deviceList_2.get(which));
-                    }
-                });
-            }
-        });
-    }
-    @Override
-    protected void onDestroy() {
-        if(client!=null)
-            client.clear();
-        super.onDestroy();
-    }
 }
