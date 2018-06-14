@@ -20,6 +20,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 public class BluetoothClient {
 
@@ -100,9 +101,9 @@ public class BluetoothClient {
     /**
      * 블루투스 디바이스와 시리얼로 연결한다.
      * @param context
-     * @param device 블루투스 디바이스. {@link getPairedDevices} 또는 {@link scanDevices} 를 통하여 가져온 블루투스 디바이스 인스턴스.
+     * @param device 블루투스 디바이스. {@link this.getPairedDevices} 또는 {@link this.scanDevices} 를 통하여 가져온 블루투스 디바이스 인스턴스.
      * @param bluetoothStreamingHandler 블루투스 스트리밍 핸들러.
-     * @return 만약 블루투스를 사용할 수 없는 상태라면 false. {@link  enableBluetooth} 를 통하여 블루투스를 사용 가능한 상태로 만들어줘야 한다.
+     * @return 만약 블루투스를 사용할 수 없는 상태라면 false. {@link  this.enableBluetooth} 를 통하여 블루투스를 사용 가능한 상태로 만들어줘야 한다.
      */
     public boolean connect(final Context context,final BluetoothDevice device, final BluetoothStreamingHandler bluetoothStreamingHandler) {
         if(!isEnabled()) return false;
@@ -163,6 +164,7 @@ public class BluetoothClient {
         filterFound.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         context.registerReceiver(mDiscoveryReceiver, filterFound);
         mBluetoothAdapter.startDiscovery();
+
         return true;
     }
 
