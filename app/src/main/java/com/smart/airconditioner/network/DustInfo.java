@@ -24,14 +24,16 @@ public class DustInfo {
     private Context context;
     private final String API_ID;
 
-    public DustInfo(Context context){
+    public DustInfo(Context context) {
         this.context = context;
         API_ID = context.getString(R.string.dust_id);
     }
-    public void getCurrentDust(){
+
+    public void getCurrentDust() {
         DustTask task = new DustTask();
         task.execute();
     }
+
     private class DustTask extends AsyncTask<String, Void, String> {
 
 
@@ -39,9 +41,9 @@ public class DustInfo {
         protected String doInBackground(String... sId) {
             String result = null;
             try {
-                URL url = new URL("http://openapi.airkorea.or.kr/openapi/services/rest/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?serviceKey="+
+                URL url = new URL("http://openapi.airkorea.or.kr/openapi/services/rest/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?serviceKey=" +
                         API_ID
-                        +"&numOfRows=1&pageSize=1&pageNo=1&startPage=1&stationName=%EC%9A%A9%EC%95%94%EB%8F%99&dataTerm=DAILY&ver=1.3");
+                        + "&numOfRows=1&pageSize=1&pageNo=1&startPage=1&stationName=%EC%9A%A9%EC%95%94%EB%8F%99&dataTerm=DAILY&ver=1.3");
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                 DocumentBuilder db = dbf.newDocumentBuilder();
                 Document doc = db.parse(new InputSource(url.openStream()));
@@ -66,7 +68,7 @@ public class DustInfo {
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
             Log.d("DUST", "EXECUTE");
-            ((MainActivity)context).notifyDustChange(result);
+            ((MainActivity) context).notifyDustChange(result);
         }
     }
 }

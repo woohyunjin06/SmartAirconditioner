@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     BluetoothClient client;
     DustInfo dInfo;
@@ -43,7 +43,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Switch onoff;
 
 
-
     @Override
     public void onCreate(Bundle onSaveStateInstance) {
         super.onCreate(onSaveStateInstance);
@@ -51,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         init();
     }
+
     public void init() {
         mWeather = findViewById(R.id.weather);
         mDust = findViewById(R.id.dust);
@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initInterface();
         initDustInfo();
         initWeatherInfo();
-        initClient();
+        //initClient();
     }
 
     public void initInterface() {
@@ -78,13 +78,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 int isCheck = isChecked ? 1 : 0;
                 try {
-                    handler.write(("P" + isCheck +"#").getBytes("UTF-8"));
+                    handler.write(("P" + isCheck + "#").getBytes("UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
                 auto.setEnabled(isChecked);
                 custom.setEnabled(isChecked);
                 power.setEnabled(isChecked);
+                power.setProgress(0);
                 timer.setEnabled(isChecked);
             }
 
@@ -93,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 try {
-                    handler.write(("P" + (progress+1) +"#").getBytes("UTF-8"));
+                    handler.write(("P" + (progress + 1) + "#").getBytes("UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
@@ -110,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
     }
+
     /**
      * refresh :
      * dInfo.getCurrentDust();
@@ -119,27 +121,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dInfo = new DustInfo(this);
         dInfo.getCurrentDust();
     }
-    public void notifyDustChange(String data){
-        mDust.setText(data + "㎍/㎥");
+
+    public void notifyDustChange(String data) {
+        String dust = String.format(getResources().getString(R.string.dust), data);
+        mDust.setText(dust);
     }
+
     public void initWeatherInfo() {
         wInfo = new WeatherInfo(this);
         wInfo.getCurrentWeather();
     }
-    public void notifyWeatherChange(Weather weather){ // WeatherTask 작업 끝을 알림
+
+    public void notifyWeatherChange(Weather weather) { // WeatherTask 작업 끝을 알림
         int weatherId = weather.getWeaatherId();
-        int resID = getResources().getIdentifier("@string/weather_"+weatherId, "string", "com.smart.airconditioner");
+        int resID = getResources().getIdentifier("@string/weather_" + weatherId, "string", "com.smart.airconditioner");
         String weatherString = getString(resID);
         mWeather.setText(weatherString);
     }
+
     public void initClient() {
         client = BluetoothClient.getInstance();
-        if(client == null) { // 블루투스를 사용할 수 없는 장비일 경우 null.
+        if (client == null) { // 블루투스를 사용할 수 없는 장비일 경우 null.
             Toast.makeText(getApplicationContext(), "블루투스를 사용할 수 없는 기기입니다.", Toast.LENGTH_LONG).show();
             finish();
-        }
-        else {
-            if(!client.isEnabled())
+        } else {
+            if (!client.isEnabled())
                 enableBluetooth();
             else {
                 getPairedDevice();
@@ -151,10 +157,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         client.enableBluetooth(this, new BluetoothClient.OnBluetoothEnabledListener() {
             @Override
             public void onBluetoothEnabled(boolean success) {
-                if(success){
+                if (success) {
                     getPairedDevice();
-                }
-                else{
+                } else {
                     Toast.makeText(getApplicationContext(), "블루투스를 활성화하지 못했습니다.", Toast.LENGTH_LONG).show();
                     finish();
                 }
@@ -165,24 +170,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void getPairedDevice() {
 
         final List<String> deviceListString = new ArrayList<>();
-        final ArrayList<BluetoothDevice> deviceList = new ArrayList<BluetoothDevice>(); // 이미 페어링된 디바이스 리스트를 가져온다.
+        final ArrayList<BluetoothDevice> deviceList = new ArrayList<>(); // 이미 페어링된 디바이스 리스트를 가져온다.
         Set<BluetoothDevice> pairedDevices = client.getPairedDevices();
         deviceList.addAll(pairedDevices);
 
         deviceList.addAll(pairedDevices); // 근처 디바이스를 스캔한다.
         client.scanDevices(this, new BluetoothClient.OnScanListener() {
             ProgressDialog pd = new ProgressDialog(MainActivity.this);
-            @Override public void onStart() {//스캔 시작.
+
+            @Override
+            public void onStart() {//스캔 시작.
                 pd.setMessage("블루투스 기기를 찾는중... ");
                 pd.setCancelable(false);
                 pd.show();
-            } @Override public void onFoundDevice(BluetoothDevice bluetoothDevice) { // 스캔이 완료된 디바이스를 받아온다.
-                if(deviceList.contains(bluetoothDevice)) {
-                    deviceList.remove(bluetoothDevice);
-                } deviceList.add(bluetoothDevice);
             }
-            @Override public void onFinish() { // 스캔 종료.
-                for(BluetoothDevice bd : deviceList) {
+
+            @Override
+            public void onFoundDevice(BluetoothDevice bluetoothDevice) { // 스캔이 완료된 디바이스를 받아온다.
+                if (deviceList.contains(bluetoothDevice)) {
+                    deviceList.remove(bluetoothDevice);
+                }
+                deviceList.add(bluetoothDevice);
+            }
+
+            @Override
+            public void onFinish() { // 스캔 종료.
+                for (BluetoothDevice bd : deviceList) {
                     deviceListString.add(bd.getName());
                 }
                 pd.dismiss();
@@ -200,18 +213,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    public void connectDevice(BluetoothDevice device){
-        if(!client.connect(this, device, handler)) { // 블루투스가 사용 가능한 상태가 아니려면 false 리턴.
+    public void connectDevice(BluetoothDevice device) {
+        if (!client.connect(this, device, handler)) { // 블루투스가 사용 가능한 상태가 아니려면 false 리턴.
             Toast.makeText(this, "블루투스를 사용할 수 없습니다", Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
     protected void onDestroy() {
-        if(client!=null)
+        if (client != null)
             client.clear();
         super.onDestroy();
     }
+
     BluetoothClient.BluetoothStreamingHandler handler = new BluetoothClient.BluetoothStreamingHandler() {
         @Override
         public void onError(Exception e) {
@@ -227,21 +241,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onDisconnected() {
             // 연결 종료 이벤트.
         }
+
         ByteBuffer mmByteBuffer = ByteBuffer.allocate(50);
 
         @Override
         public void onData(byte[] buffer, int length) {
-            if(length == 0) return;
-            if(mmByteBuffer.position() + length >= mmByteBuffer.capacity()) {
+            if (length == 0) return;
+            if (mmByteBuffer.position() + length >= mmByteBuffer.capacity()) {
                 ByteBuffer newBuffer = ByteBuffer.allocate(mmByteBuffer.capacity() * 2);
-                newBuffer.put(mmByteBuffer.array(), 0,  mmByteBuffer.position());
+                newBuffer.put(mmByteBuffer.array(), 0, mmByteBuffer.position());
                 mmByteBuffer = newBuffer;
             }
             mmByteBuffer.put(buffer, 0, length);
             String data = new String(mmByteBuffer.array());
-            if(data.trim().length()<0)
+            if (data.trim().length() < 0)
                 return;
-            if(buffer[length - 1] == '>' && length != 1) {
+            if (buffer[length - 1] == '>' && length != 1) {
                 Toast.makeText(MainActivity.this, new String(mmByteBuffer.array(), 0, mmByteBuffer.position()), Toast.LENGTH_SHORT).show();
                 mmByteBuffer.clear();
             }
@@ -267,12 +282,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     showEditDialog();
                     break;
             }
-        }catch(UnsupportedEncodingException e){
+        } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
     }
 
-    public void showEditDialog(){
+    public void showEditDialog() {
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
 
         alert.setTitle("전원을 몇 시간 뒤에 끄시겠습니까? (1시간 단위)");
@@ -286,16 +301,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 int time_int = 0;
                 try {
                     time_int = Integer.parseInt(time);
-                } catch(NumberFormatException e){
+                } catch (NumberFormatException e) {
                     e.printStackTrace();
                     Toast.makeText(MainActivity.this, "올바른 숫자가 아닙니다.", Toast.LENGTH_SHORT).show();
                 }
 
-                if(time_int>20||time_int<1){
+                if (time_int > 20 || time_int < 1) {
                     Toast.makeText(MainActivity.this, "1이상, 20이하의 숫자를 입력해주세요.", Toast.LENGTH_SHORT).show();
                 }
                 try {
-                    handler.write(("T"+time+"#").getBytes("UTF-8"));
+                    handler.write(("T" + time + "#").getBytes("UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
@@ -303,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
 
-        alert.setNegativeButton("취소",new DialogInterface.OnClickListener() {
+        alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
                 dialog.dismiss();
             }

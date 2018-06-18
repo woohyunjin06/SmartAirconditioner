@@ -4,6 +4,8 @@
     <string name="dust_id">LgrUg9w0Kjz3Hp3c2InxlATULfE0bnkL7zjEP5dS9IcwJF18Cp2xph6hzsSSgzJzS19a0CI11KKyrrgrAj%2FtvQ%3D%3D</string>
     <string name="weather_id">af40d953f86a2313ecd3a174b34d2f9f</string>
 
+
+    <string name="dust">%1$s㎍/㎥</string>
     <string name="weather_200">가벼운 비를 동반한 천둥구름</string>
     <string name="weather_201">비를 동반한 천둥구름</string>
     <string name="weather_202">폭우를 동반한 천둥구름</string>

@@ -45,10 +45,10 @@ public class BluetoothClient {
      * @return BluetoothClient 의 인스턴스. 만약 블루투스를 사용할 수 없는 기기라면 null.
      */
     public static BluetoothClient getInstance() {
-        if(sThis == null) {
+        if (sThis == null) {
             sThis = new BluetoothClient();
         }
-        if(sThis.mBluetoothAdapter == null) {
+        if (sThis.mBluetoothAdapter == null) {
             sThis = null;
             return null;
         }
@@ -74,11 +74,12 @@ public class BluetoothClient {
     /**
      * 블루투스 ON
      * 만약 기기 내에서 블루투스 사용이 꺼져있다면, 사용자로 하여 블루투스 사용에 관한 선택을 하게 하는 창을 출력한다.
-     * @param context activity
+     *
+     * @param context                    activity
      * @param onBluetoothEnabledListener 블루투스 on/off 에 대한 이벤트.
      */
     public void enableBluetooth(Context context, OnBluetoothEnabledListener onBluetoothEnabledListener) {
-        if(!mBluetoothAdapter.isEnabled()) {
+        if (!mBluetoothAdapter.isEnabled()) {
             mOnBluetoothUpListener = onBluetoothEnabledListener;
             Intent intent = new Intent(context, BluetoothUpActivity.class);
             context.startActivity(intent);
@@ -86,8 +87,6 @@ public class BluetoothClient {
             onBluetoothEnabledListener.onBluetoothEnabled(true);
         }
     }
-
-
 
 
     /**
@@ -100,16 +99,17 @@ public class BluetoothClient {
 
     /**
      * 블루투스 디바이스와 시리얼로 연결한다.
+     *
      * @param context
-     * @param device 블루투스 디바이스. {@link this.getPairedDevices} 또는 {@link this.scanDevices} 를 통하여 가져온 블루투스 디바이스 인스턴스.
+     * @param device                    블루투스 디바이스. {@link this.getPairedDevices} 또는 {@link this.scanDevices} 를 통하여 가져온 블루투스 디바이스 인스턴스.
      * @param bluetoothStreamingHandler 블루투스 스트리밍 핸들러.
      * @return 만약 블루투스를 사용할 수 없는 상태라면 false. {@link  this.enableBluetooth} 를 통하여 블루투스를 사용 가능한 상태로 만들어줘야 한다.
      */
-    public boolean connect(final Context context,final BluetoothDevice device, final BluetoothStreamingHandler bluetoothStreamingHandler) {
-        if(!isEnabled()) return false;
+    public boolean connect(final Context context, final BluetoothDevice device, final BluetoothStreamingHandler bluetoothStreamingHandler) {
+        if (!isEnabled()) return false;
         mConnectedDevice = device;
         mBluetoothStreamingHandler = bluetoothStreamingHandler;
-        if(isConnection()) {
+        if (isConnection()) {
             mWriteExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -119,7 +119,7 @@ public class BluetoothClient {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                    }  catch (IOException e) {
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                     connect(context, device, bluetoothStreamingHandler);
@@ -135,6 +135,7 @@ public class BluetoothClient {
 
     /**
      * 과거에 페어링 되었던 블루투스 디바이스 목록을 가져온다.
+     *
      * @return
      */
     public Set<BluetoothDevice> getPairedDevices() {
@@ -144,17 +145,18 @@ public class BluetoothClient {
 
     /**
      * 주변의 새 블루투스 디바이스를 스캔한다.
+     *
      * @param context
      * @param OnScanListener 블루투스를 스캔 이벤트.
      * @return
      */
     public boolean scanDevices(Context context, OnScanListener OnScanListener) {
-        if(!mBluetoothAdapter.isEnabled()) return false;
-        if(mBluetoothAdapter.isDiscovering()) {
+        if (!mBluetoothAdapter.isEnabled()) return false;
+        if (mBluetoothAdapter.isDiscovering()) {
             mBluetoothAdapter.cancelDiscovery();
             try {
                 context.unregisterReceiver(mDiscoveryReceiver);
-            } catch(IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 e.printStackTrace();
             }
         }
@@ -170,21 +172,23 @@ public class BluetoothClient {
 
     /**
      * 스캔을 취소한다.
+     *
      * @param context
      */
     public void cancelScan(Context context) {
-        if(!mBluetoothAdapter.isEnabled() || !mBluetoothAdapter.isDiscovering()) return;
+        if (!mBluetoothAdapter.isEnabled() || !mBluetoothAdapter.isDiscovering()) return;
         mBluetoothAdapter.cancelDiscovery();
         try {
             context.unregisterReceiver(mDiscoveryReceiver);
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
-        if(mOnScanListener != null) mOnScanListener.onFinish();
+        if (mOnScanListener != null) mOnScanListener.onFinish();
     }
 
     /**
      * 블루투스 디바이스와 연결 되어있는지를 가져온다.
+     *
      * @return true/false
      */
     public boolean isConnection() {
@@ -193,12 +197,12 @@ public class BluetoothClient {
 
     /**
      * 연결된 블루투스 디바이스를 가져온다.
+     *
      * @return 만약 연결된 블루투스 디바이스가 없다면 null.
      */
     public BluetoothDevice getConnectedDevice() {
         return mConnectedDevice;
     }
-
 
 
     private void connectClient() {
@@ -241,7 +245,7 @@ public class BluetoothClient {
 
 
     private void manageConnectedSocket(BluetoothSocket socket) throws IOException {
-        mInputStream =  socket.getInputStream();
+        mInputStream = socket.getInputStream();
         mOutputStream = socket.getOutputStream();
     }
 
@@ -256,7 +260,7 @@ public class BluetoothClient {
 
 
     private boolean write(final byte[] buffer) {
-        if(!mIsConnection.get()) return false;
+        if (!mIsConnection.get()) return false;
         mWriteExecutor.execute(new Runnable() {
             @Override
             public void run() {
@@ -275,7 +279,7 @@ public class BluetoothClient {
 
     private boolean close() {
         mConnectedDevice = null;
-        if(mIsConnection.get()) {
+        if (mIsConnection.get()) {
             mIsConnection.set(false);
             try {
                 mBluetoothSocket.close();
@@ -291,7 +295,7 @@ public class BluetoothClient {
     private Runnable mCloseRunable = new Runnable() {
         @Override
         public void run() {
-            if(mBluetoothStreamingHandler != null) {
+            if (mBluetoothStreamingHandler != null) {
                 mBluetoothStreamingHandler.onDisconnected();
             }
         }
@@ -306,8 +310,8 @@ public class BluetoothClient {
                 mMainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        if(mBluetoothStreamingHandler != null) {
-                            mBluetoothStreamingHandler.onData(buffer ,readBytes);
+                        if (mBluetoothStreamingHandler != null) {
+                            mBluetoothStreamingHandler.onData(buffer, readBytes);
                         }
                     }
                 });
@@ -320,33 +324,30 @@ public class BluetoothClient {
     };
 
 
-
-
-
-    private BroadcastReceiver  mDiscoveryReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver mDiscoveryReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if(mOnScanListener != null) mOnScanListener.onFoundDevice(device);
+                if (mOnScanListener != null) mOnScanListener.onFoundDevice(device);
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                if(mOnScanListener != null) mOnScanListener.onFinish();
+                if (mOnScanListener != null) mOnScanListener.onFinish();
                 try {
                     context.unregisterReceiver(mDiscoveryReceiver);
-                } catch(IllegalArgumentException e) {
+                } catch (IllegalArgumentException e) {
                     e.printStackTrace();
                 }
             } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-                if(mOnScanListener != null)  mOnScanListener.onStart();
+                if (mOnScanListener != null) mOnScanListener.onStart();
             }
         }
     };
 
 
-
     public static class BluetoothUpActivity extends Activity {
         private static int REQUEST_ENABLE_BT = 2;
+
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
@@ -357,25 +358,27 @@ public class BluetoothClient {
                 }
             }, 100);
         }
+
         private void upbluetoothDevice() {
             BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
             if (!btAdapter.isEnabled()) {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT) ;
+                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             }
         }
+
         @Override
         protected void onActivityResult(int requestCode, int resultCode, Intent data) {
             super.onActivityResult(requestCode, resultCode, data);
-            if(requestCode == REQUEST_ENABLE_BT) {
+            if (requestCode == REQUEST_ENABLE_BT) {
                 OnBluetoothEnabledListener onBluetoothEnabledListener = getInstance().mOnBluetoothUpListener;
                 if (resultCode == Activity.RESULT_OK) {
-                    if(onBluetoothEnabledListener != null)
+                    if (onBluetoothEnabledListener != null)
                         onBluetoothEnabledListener.onBluetoothEnabled(true);
                     finish();
                 } else {
-                    if(onBluetoothEnabledListener != null)
+                    if (onBluetoothEnabledListener != null)
                         onBluetoothEnabledListener.onBluetoothEnabled(false);
                     finish();
                 }
@@ -391,24 +394,31 @@ public class BluetoothClient {
 
     public static interface OnScanListener {
         public void onStart();
+
         public void onFoundDevice(BluetoothDevice bluetoothDevice);
+
         public void onFinish();
     }
 
     public abstract static class BluetoothStreamingHandler {
         public abstract void onError(Exception e);
+
         public abstract void onConnected();
+
         public abstract void onDisconnected();
+
         public abstract void onData(byte[] buffer, int length);
+
         public final boolean close() {
             BluetoothClient btSet = getInstance();
-            if(btSet != null)
+            if (btSet != null)
                 return btSet.close();
             return false;
         }
+
         public final boolean write(byte[] buffer) {
             BluetoothClient btSet = getInstance();
-            if(btSet != null)
+            if (btSet != null)
                 return btSet.write(buffer);
             return false;
         }
