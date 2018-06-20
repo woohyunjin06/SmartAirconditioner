@@ -10,7 +10,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,12 +34,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     TextView mWeather;
     TextView mDust;
     TextView mTemp;
+    TextView mStatus;
 
-    Button auto;
-    Button custom;
-    SeekBar power;
+    Button p1, p2, p3;
+
     Button timer;
     Switch onoff;
+    Switch auto;
+
 
 
     @Override
@@ -55,10 +56,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mWeather = findViewById(R.id.weather);
         mDust = findViewById(R.id.dust);
         mTemp = findViewById(R.id.temperature);
+        mStatus = findViewById(R.id.status);
 
         auto = findViewById(R.id.auto);
-        custom = findViewById(R.id.custom);
-        power = findViewById(R.id.power);
+
+        p1 = findViewById(R.id.p1);
+        p2 = findViewById(R.id.p2);
+        p3 = findViewById(R.id.p3);
+
         timer = findViewById(R.id.timer);
 
         onoff = findViewById(R.id.onoff);
@@ -66,50 +71,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initInterface();
         initDustInfo();
         initWeatherInfo();
-        //initClient();
+        initClient();
     }
 
     public void initInterface() {
-        auto.setOnClickListener(this);
-        custom.setOnClickListener(this);
         timer.setOnClickListener(this);
+        p1.setOnClickListener(this);
+        p2.setOnClickListener(this);
+        p3.setOnClickListener(this);
         onoff.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 int isCheck = isChecked ? 1 : 0;
                 try {
-                    handler.write(("P" + isCheck + "#").getBytes("UTF-8"));
+                    handler.write(("C" + isCheck + "#").getBytes("UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-                auto.setEnabled(isChecked);
-                custom.setEnabled(isChecked);
-                power.setEnabled(isChecked);
-                power.setProgress(0);
+                p1.setEnabled(isChecked);
+                p2.setEnabled(isChecked);
+                p3.setEnabled(isChecked);
                 timer.setEnabled(isChecked);
             }
 
         });
-        power.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+        auto.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                int isCheck = isChecked ? 1 : 0;
                 try {
-                    handler.write(("P" + (progress + 1) + "#").getBytes("UTF-8"));
+                    handler.write(("M"+isCheck+"#").getBytes("UTF-8"));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
-            }
 
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
+                p1.setEnabled(isChecked);
+                p2.setEnabled(isChecked);
+                p3.setEnabled(isChecked);
+                onoff.setEnabled(isChecked);
+                timer.setEnabled(isChecked);
             }
         });
+
     }
 
     /**
@@ -136,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int weatherId = weather.getWeaatherId();
         int resID = getResources().getIdentifier("@string/weather_" + weatherId, "string", "com.smart.airconditioner");
         String weatherString = getString(resID);
+        mTemp.setText(String.valueOf(weather.getTemperature()));
         mWeather.setText(weatherString);
     }
 
@@ -226,6 +231,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onDestroy();
     }
 
+    /**
+     * parameter
+     * M0# : 수동모드
+     * M1# : 자동모드
+     * P0# : 전원끄기
+     * P1# : 세기1
+     * P2# : 세기2
+     * P3# : 세기3
+     * T1#~T9# : 타이머 (1시간 단위)
+     *
+     * @method BluetoothStreamingHandler.send
+     * @params byte[] data
+     */
     BluetoothClient.BluetoothStreamingHandler handler = new BluetoothClient.BluetoothStreamingHandler() {
         @Override
         public void onError(Exception e) {
@@ -256,31 +274,61 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String data = new String(mmByteBuffer.array());
             if (data.trim().length() < 0)
                 return;
-            if (buffer[length - 1] == '>' && length != 1) {
-                Toast.makeText(MainActivity.this, new String(mmByteBuffer.array(), 0, mmByteBuffer.position()), Toast.LENGTH_SHORT).show();
+            if (buffer[length - 1] == '#' && length != 1) {
+                String current = new String(mmByteBuffer.array(), 0, mmByteBuffer.position());
+                boolean isAuto;
+                if(current.contains("A")||current.contains("C")){
+                    isAuto = current.contains("A");
+                    auto.setChecked(isAuto);
+                    try {
+                        int currentStatus = Integer.parseInt(current.trim().replace("A", "").replace("C","").replace("#","")); // 문자열에서 공백 제거후  A,C 제거
+                        switch(currentStatus){
+                            case 0: //꺼짐
+                                mStatus.setText("전원이 꺼져 있습니다");
+                                break;
+
+                            case 1: //세기 1
+                                mStatus.setText("1단 세기로 돌아가고 있습니다.");
+                                break;
+
+                            case 2: //세기 2
+                                mStatus.setText("2단 세기로 돌아가고 있습니다.");
+                                break;
+
+                            case 3: //세기 3
+                                mStatus.setText("3단 세기로 돌아가고 있습니다.");
+                                break;
+                        }
+                    }
+                    catch(NumberFormatException e){
+                        Toast.makeText(MainActivity.this, "ERROR OCCUR", Toast.LENGTH_SHORT).show(); // 송신된 데이터에 결함 유
+                    }
+                }
                 mmByteBuffer.clear();
             }
         }
     };
 
+
     @Override
     public void onClick(View v) {
-        String message;
         try {
             switch (v.getId()) {
-                case R.id.auto:
-                    message = "M0#";
-                    handler.write(message.getBytes("UTF-8"));
+                case R.id.p1:
+                    handler.write(("P1#").getBytes("UTF-8"));
                     break;
 
-                case R.id.custom:
-                    message = "M1#";
-                    handler.write(message.getBytes("UTF-8"));
+                case R.id.p2:
+                    handler.write(("P2#").getBytes("UTF-8"));
                     break;
 
+                case R.id.p3:
+                    handler.write(("P3#").getBytes("UTF-8"));
+                    break;
                 case R.id.timer:
                     showEditDialog();
                     break;
+
             }
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -290,9 +338,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void showEditDialog() {
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
 
-        alert.setTitle("전원을 몇 시간 뒤에 끄시겠습니까? (1시간 단위)");
+        alert.setTitle("전원 타이머 설정 (1시간 단위)");
 
         final EditText name = new EditText(this);
+
         alert.setView(name);
 
         alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
@@ -306,8 +355,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Toast.makeText(MainActivity.this, "올바른 숫자가 아닙니다.", Toast.LENGTH_SHORT).show();
                 }
 
-                if (time_int > 20 || time_int < 1) {
-                    Toast.makeText(MainActivity.this, "1이상, 20이하의 숫자를 입력해주세요.", Toast.LENGTH_SHORT).show();
+                if (time_int > 9 || time_int < 1) {
+                    Toast.makeText(MainActivity.this, "1이상, 9이하의 숫자를 입력해주세요.", Toast.LENGTH_SHORT).show();
                 }
                 try {
                     handler.write(("T" + time + "#").getBytes("UTF-8"));
@@ -327,4 +376,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         alert.show();
 
     }
+
 }
