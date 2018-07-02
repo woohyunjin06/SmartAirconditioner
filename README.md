@@ -19,6 +19,7 @@
      * A(n)# : 자동모드로 n 세기로 작동중
      * C(n)# : 수동모드로 n 세기로 작동중
 
+# 라이센스
 <pre>
 <code>
 Copyright 2018 Hyunjin Woo
